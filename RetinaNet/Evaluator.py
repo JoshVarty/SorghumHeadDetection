@@ -15,9 +15,9 @@ from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 
-from BoundingBox import *
-from BoundingBoxes import *
-from utils import *
+from RetinaNet.BoundingBox import *
+from RetinaNet.BoundingBoxes import *
+from RetinaNet.utils import *
 
 
 class Evaluator:

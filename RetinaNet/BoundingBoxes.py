@@ -1,5 +1,5 @@
-from BoundingBox import *
-from utils import *
+from RetinaNet.utils import *
+from RetinaNet.BoundingBox import *
 
 
 class BoundingBoxes:

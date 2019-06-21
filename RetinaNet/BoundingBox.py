@@ -1,4 +1,4 @@
-from utils import *
+from RetinaNet.utils import *
 
 
 class BoundingBox:
