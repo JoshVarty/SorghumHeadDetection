@@ -2,6 +2,39 @@ import numpy as np
 from fastai import *
 from fastai.vision import *
 
+def get_annotations_from_path(annotationsPath, prefix):
+    "Open the files in folder `folderPath` and returns the lists of filenames with `prefix` and labelled bboxes."
+    filePaths = os.listdir(annotationsPath)     
+    id2images, id2bboxes, id2cats = {}, collections.defaultdict(list), collections.defaultdict(list)
+    classes = {}
+    
+    sorghumHeadCategory = 0
+    
+    for path in filePaths:
+        fullPath = annotationsPath/path
+        id = path.replace('.txt', '.jpeg')
+        
+        with open(fullPath, 'r') as f:
+            for line in f:
+                
+                splitLines = line.split(' ')
+                
+                left = int(splitLines[1])
+                top = int(splitLines[2])
+                right = int(splitLines[3])
+                bottom = int(splitLines[4].strip())
+               
+                id2bboxes[id].append([top, left, bottom, right])
+                id2cats[id].append(sorghumHeadCategory)
+               
+
+            id2images[id] = prefix/id
+
+    #Set up classes mapping from id to classname
+    classes[sorghumHeadCategory] = 'sorghumHead'
+                   
+    ids = list(id2images.keys())
+    return [id2images[k] for k in ids], [[id2bboxes[k], id2cats[k]] for k in ids]
 
 def create_anchors(sizes, ratios, scales, flatten=True):
     "Create anchor of `sizes`, `ratios` and `scales`."
