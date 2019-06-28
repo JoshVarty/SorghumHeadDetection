@@ -12,7 +12,7 @@ class LateralUpsampleMerge(nn.Module):
         self.conv_lat = conv2d(ch_lat, ch, ks=1, bias=True)
 
     def forward(self, x):
-        return self.conv_lat(self.hook.stored) + F.interpolate(x, scale_factor=2)
+        return self.conv_lat(self.hook.stored) + F.interpolate(x, self.hook.stored.shape[-2:], mode='nearest') 
 
 
 class RetinaNet(nn.Module):
@@ -22,14 +22,16 @@ class RetinaNet(nn.Module):
                  chs=256, n_anchors=9, flatten=True, sizes=None):
         super().__init__()
         self.n_classes, self.flatten = n_classes, flatten
-        imsize = (256, 256)
+        #imsize = (256, 256)
+        imsize = (1103, 287)
         self.sizes = sizes
-        sfs_szs, x, hooks = self._model_sizes(encoder, size=imsize)
-        sfs_idxs = _get_sfs_idxs(sfs_szs)
+        sfs_szs, _, hooks = self._model_sizes(encoder, size=imsize)
         self.encoder = encoder
-        self.c5top5 = conv2d(sfs_szs[-1][1], chs, ks=1, bias=True)
-        self.c5top6 = conv2d(sfs_szs[-1][1], chs, stride=2, bias=True)
-        self.p6top7 = nn.Sequential(nn.ReLU(), conv2d(chs, chs, stride=2, bias=True))
+
+        self.c5top5 = conv2d(sfs_szs[-1][1], chs, ks=1, bias=True)          # 
+        self.c5top6 = conv2d(sfs_szs[-1][1], chs, stride=2, bias=True)      # This is C6
+
+        self.p6top7 = nn.Sequential(nn.ReLU(), conv2d(chs, chs, stride=2, bias=True))   # This is C7 (Which is equal to P7)
         self.merges = nn.ModuleList([LateralUpsampleMerge(chs, szs[1], hook)
                                      for szs, hook in zip(sfs_szs[-2:-4:-1], hooks[-2:-4:-1])])
         self.smoothers = nn.ModuleList([conv2d(chs, chs, 3, bias=True) for _ in range(3)])
@@ -76,8 +78,10 @@ class RetinaNet(nn.Module):
             p_states = [merge(p_states[0])] + p_states
         for i, smooth in enumerate(self.smoothers[:3]):
             p_states[i] = smooth(p_states[i])
-        if self.sizes is not None:
-            p_states = [p_state for p_state in p_states if p_state.size()[-1] in self.sizes]
+
+        # OPTIONALLY FILTER OUT p_states
+        # if self.sizes is not None:
+        #     p_states = [p_state for p_state in p_states if p_state.size()[-1] in self.sizes]
         return [self._apply_transpose(self.classifier, p_states, self.n_classes),
                 self._apply_transpose(self.box_regressor, p_states, 4),
                 [[p.size(2), p.size(3)] for p in p_states]]
