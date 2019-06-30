@@ -112,10 +112,8 @@ class PascalVOCMetric(Callback):
                 list(zip(bbox_gt_batch, class_gt_batch, class_pred_batch, bbox_pred_batch))[: self.images_per_batch]:
 
             bbox_pred, scores, preds = process_output(clas_pred, bbox_pred, self.anchors, self.detect_thresh)
-            if bbox_pred is None:# or len(preds) > 3 * len(bbox_gt):
+            if len(bbox_pred) <= 0: # or len(preds) > 3 * len(bbox_gt):
                 continue
-
-            #image = np.zeros((512, 512, 3), np.uint8)
 
             # if the number is to hight evaluation is very slow
             total_nms_examples = len(class_gt) * 3

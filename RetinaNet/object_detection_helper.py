@@ -2,6 +2,14 @@ import numpy as np
 from fastai import *
 from fastai.vision import *
 
+def tlbr2ltwh(boxes):
+    
+    new_boxes = []
+    for box in boxes:
+        new_boxes.append([box[1], box[0], box[3] - box[1], box[2] - box[0], 0, 0.7])
+        
+    return new_boxes
+
 def get_annotations_from_path(annotationsPath, prefix):
     "Open the files in folder `folderPath` and returns the lists of filenames with `prefix` and labelled bboxes."
     filePaths = os.listdir(annotationsPath)     
@@ -220,7 +228,7 @@ def show_results_side_by_side(learn: Learner, anchors, detect_thresh:float=0.2, 
                 img = Image(img)
 
             bbox_pred, scores, preds = process_output(clas_pred, bbox_pred, anchors, detect_thresh)
-            if bbox_pred is not None:
+            if len(bbox_pred) > 0:
                 to_keep = nms(bbox_pred, scores, nms_thresh)
                 bbox_pred, preds, scores = bbox_pred[to_keep].cpu(), preds[to_keep].cpu(), scores[to_keep].cpu()
 
