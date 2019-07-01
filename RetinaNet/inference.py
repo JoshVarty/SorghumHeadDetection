@@ -17,7 +17,7 @@ from fastai.vision import Learner, create_body, models, conv2d, ifnone, DatasetT
 from fastai.torch_core import to_np
 from fastai.vision.data import pil2tensor
 
-from RetinaNet.object_detection_helper import process_output, nms, rescale_boxes, GeneralEnsemble
+from RetinaNet.object_detection_helper import process_output, nms, rescale_boxes, GeneralEnsemble, tlbr2ltwh
 from RetinaNet.object_detection_helper import create_anchors, get_annotations_from_path
 from RetinaNet.RetinaNetFocalLoss import FocalLoss
 from RetinaNet.RetinaNet import RetinaNet
@@ -140,8 +140,41 @@ def get_bounding_box_predictions(learn, dataloader, anchors, original_images, ve
     return all_imgs, all_bboxes
 
 
-def custom_tta(learn, anchors, ds_type=DatasetType.Valid, model_input_size=256):
+def ensembleBoxesFromSlices(all_preds):
+    
+    boxes_by_image = {}
+
+    for preds in all_preds:
+        images, boxes = preds
+
+        for i, boxes in enumerate(boxes):
+
+            if i not in boxes_by_image:
+                boxes_by_image[i] = []
+
+            boxes_by_image[i].append(tlbr2ltwh(boxes))
+            
+            
+    final_preds = []
+
+    for image_index, all_boxes in boxes_by_image.items():
+        ensembled_boxes = GeneralEnsemble(all_boxes)
+
+        asdf = []
+
+        for box in ensembled_boxes:
+            #[box_x, box_y, box_w, box_h, class, confidence] to [top, left, bottom, right]
+            asdf.append([box[1], box[0], box[1] + box[3], box[0] + box[2]])
+
+        final_preds.append(asdf)
+        
+    return final_preds
+
+
+def get_bounding_box_predictions_for_dataset(learn, anchors, ds_type=DatasetType.Valid, model_input_size=256):
     dl = learn.dl(ds_type)
+
+    sliced_predictions = []
     
     maxHeight, maxWidth = getMaxHeightAndWidth(learn, ds_type)
 
@@ -159,8 +192,15 @@ def custom_tta(learn, anchors, ds_type=DatasetType.Valid, model_input_size=256):
                 setupNewCrop(i, j)
                 
                 #yield get_preds(learn.model, dl, activ=_loss_func2activ(learn.loss_func))[0]
-                yield get_bounding_box_predictions(learn, dl, anchors, original_images, i, j)
+                predictions =  get_bounding_box_predictions(learn, dl, anchors, original_images, i, j)
+                sliced_predictions.append(predictions)
+
+        x = ensembleBoxesFromSlices(sliced_predictions)
+        return x
+        
     finally:
         #Restore original method for opening images
         fastai.vision.data.open_image = old_open_image
+
+    
     
