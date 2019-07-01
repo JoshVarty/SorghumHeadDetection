@@ -146,7 +146,7 @@ def get_bounding_box_predictions(learn, dataloader, anchors, original_images, ve
 
                 all_imgs.append(original_image)
                 all_bboxes.append(bbox_pred)
-                all_scores.append(scores)
+                all_scores.append(scores.numpy())
             
             #After completing a batch, we have to keep track the total number of images we've processed
             batch_index = batch_index + index + 1
@@ -176,8 +176,10 @@ def ensembleBoxesFromSlices(all_preds):
         boxes_tlrb = []
 
         for box in ensembled_boxes:
-            #[box_x, box_y, box_w, box_h, class, confidence] to [top, left, bottom, right]
-            boxes_tlrb.append([box[1], box[0], box[1] + box[3], box[0] + box[2]])
+            #[box_x, box_y, box_w, box_h, class, confidence] 
+            # to 
+            # [top, left, bottom, right, confidence]
+            boxes_tlrb.append([box[1], box[0], box[1] + box[3], box[0] + box[2], box[5]])
 
         final_preds.append(boxes_tlrb)
         
@@ -213,4 +215,4 @@ def get_bounding_box_predictions_for_dataset(learn, anchors, ds_type=DatasetType
         
     finally:
         #Restore original method for opening images
-        fastai.vision.data.open_image = old_open_image    
+        fastai.vision.data.open_image = old_open_image
