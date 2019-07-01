@@ -2,14 +2,6 @@ import numpy as np
 from fastai import *
 from fastai.vision import *
 
-def tlbr2ltwh(boxes):
-    
-    new_boxes = []
-    for box in boxes:
-        new_boxes.append([box[1], box[0], box[3] - box[1], box[2] - box[0], 0, 0.7])
-        
-    return new_boxes
-
 def get_annotations_from_path(annotationsPath, prefix):
     "Open the files in folder `folderPath` and returns the lists of filenames with `prefix` and labelled bboxes."
     filePaths = os.listdir(annotationsPath)     
