@@ -111,18 +111,23 @@ def get_bounding_box_predictions(learn, dataloader, anchors, original_images, ve
 
             for index, (img, clas_pred, bbox_pred) in enumerate(zip(img_batch, class_pred_batch, bbox_pred_batch)):
                 original_image = original_images[batch_index + index]
+                all_imgs.append(original_image)
                 
                 #Filter out predictions below detect_thresh
                 bbox_pred, scores, preds = process_output(clas_pred, bbox_pred, anchors, detect_threshold)
                 
                 #If there are no bounding boxes, we're done
                 if len(bbox_pred) <= 0:
+                    all_bboxes.append([])
+                    all_scores.append([])
                     continue
                     
                 #Only keep most likely bounding boxes
                 to_keep = nms(bbox_pred, scores, nms_threshold)
                 
                 if len(to_keep) <= 0:
+                    all_bboxes.append([])
+                    all_scores.append([])
                     continue
                     
                 bbox_pred, preds, scores = bbox_pred[to_keep].cpu(), preds[to_keep].cpu(), scores[to_keep].cpu()
@@ -144,7 +149,6 @@ def get_bounding_box_predictions(learn, dataloader, anchors, original_images, ve
                 bbox_pred[:, 1] = bbox_pred[:, 1] + crop_x
                 bbox_pred[:, 3] = bbox_pred[:, 3] + bbox_pred[:, 1]
 
-                all_imgs.append(original_image)
                 all_bboxes.append(bbox_pred)
                 all_scores.append(scores.numpy())
             
@@ -167,7 +171,6 @@ def ensembleBoxesFromSlices(all_preds):
 
             boxes_by_image[i].append(tlbr2ltwhcs(boxes, scores))
             
-    
     final_preds = []
 
     for image_index, all_boxes in boxes_by_image.items():
