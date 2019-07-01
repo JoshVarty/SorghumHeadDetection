@@ -17,14 +17,16 @@ from fastai.vision import Learner, create_body, models, conv2d, ifnone, DatasetT
 from fastai.torch_core import to_np
 from fastai.vision.data import pil2tensor
 
-from RetinaNet.object_detection_helper import process_output, nms, rescale_boxes, GeneralEnsemble, tlbr2ltwh
+from RetinaNet.object_detection_helper import process_output, nms, rescale_boxes, GeneralEnsemble
 from RetinaNet.object_detection_helper import create_anchors, get_annotations_from_path
 from RetinaNet.RetinaNetFocalLoss import FocalLoss
 from RetinaNet.RetinaNet import RetinaNet
 from RetinaNet.callbacks import BBLossMetrics, BBMetrics, PascalVOCMetric
 
-def tlbr2ltwh(boxes, scores):
-    
+def tlbr2ltwhcs(boxes, scores):
+    """
+    Top-Left-Bottom-Right to Left-Top-Width-Height-Class-Score
+    """
     new_boxes = []
     for box, score in zip(boxes, scores):
         new_boxes.append([box[1], box[0], box[3] - box[1], box[2] - box[0], 0, score])
@@ -163,7 +165,7 @@ def ensembleBoxesFromSlices(all_preds):
             if i not in boxes_by_image:
                 boxes_by_image[i] = []
 
-            boxes_by_image[i].append(tlbr2ltwh(boxes, scores))
+            boxes_by_image[i].append(tlbr2ltwhcs(boxes, scores))
             
     
     final_preds = []
